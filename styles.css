@@ -244,3 +244,122 @@ button {
   color: var(--color-muted);
   font-size: 0.9rem;
 }
+
+.grid-panel {
+  max-width: 1100px;
+  margin: 0 auto 40px;
+}
+
+.grid-legend {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.legend-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+}
+
+.grid-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.day-block {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  overflow-x: auto;
+}
+
+.day-block-header {
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
+.day-block-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.day-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.day-row-name {
+  flex: 0 0 110px;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.day-row-cells {
+  display: flex;
+  gap: 1px;
+}
+
+.slot-cell {
+  width: 7px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 1px;
+  cursor: pointer;
+}
+
+.slot-cell:hover,
+.slot-cell:focus {
+  outline: 2px solid var(--color-text);
+  outline-offset: 1px;
+}
+
+.slot-detail {
+  margin-top: 16px;
+}
+
+.slot-detail h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.slot-detail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
+}
+
+.slot-detail-list li {
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.slot-detail-ok {
+  background: #eafaf0;
+}
+
+.slot-detail-bad {
+  background: #fff3e6;
+}
+
+.slot-detail-time {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}

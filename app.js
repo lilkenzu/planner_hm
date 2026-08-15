@@ -28,11 +28,29 @@ function findTimeZoneMatches(query) {
     .slice(0, 8);
 }
 
+const DAY_BLOCK_SIZE = 48; // 24 ч × 2 слота/ч — совпадает с дефолтными опциями Availability.buildWeekGrid
+const SLOT_MINUTES = 30;
+
+// «Сейчас» почти никогда не приходится ровно на границу получаса — без этого
+// слоты выглядели бы как 06:43–07:13 вместо 06:30–07:00. Округляем вверх по
+// UTC: для поясов с целым/получасовым смещением (Москва, Лондон) это даёт
+// ровные :00/:30, а Катманду (+5:45) всё равно покажет :15/:45 — это не баг
+// округления, а свойство самого 45-минутного сдвига, его так и не обойти.
+function roundUpToSlotBoundary(date, slotMinutes) {
+  const ms = slotMinutes * 60000;
+  return new Date(Math.ceil(date.getTime() / ms) * ms);
+}
+
 const state = {
   participants: [],
   editingId: null,
   selectedTimeZone: null,
   nextId: 1,
+  // Фиксируется один раз при открытии страницы, чтобы сетка не «уезжала»
+  // вперёд при каждом пересчёте (добавление/правка/удаление участника).
+  rangeStart: roundUpToSlotBoundary(new Date(), SLOT_MINUTES),
+  grid: null,
+  selectedSlotIndex: null,
 };
 
 const form = document.getElementById('participant-form');
@@ -48,6 +66,9 @@ const daysGrid = document.getElementById('days-grid');
 const submitBtn = document.getElementById('submit-btn');
 const cancelBtn = document.getElementById('cancel-btn');
 const participantsList = document.getElementById('participants-list');
+const gridSection = document.getElementById('grid-section');
+const gridContainer = document.getElementById('grid-container');
+const slotDetail = document.getElementById('slot-detail');
 
 function renderDaysCheckboxes(selectedDays) {
   daysGrid.innerHTML = '';
@@ -222,13 +243,136 @@ function deleteParticipant(id) {
   if (state.editingId === id) {
     resetForm();
   }
-  renderParticipants();
+  refresh();
 }
 
 function escapeHtml(value) {
   const div = document.createElement('div');
   div.textContent = value;
   return div.innerHTML;
+}
+
+// 0% -> красный (hue 0), 100% -> зелёный (hue 120). Общая заливка ячейки —
+// не по конкретному участнику, а по доле доступных из всех.
+function percentToColor(percent) {
+  const hue = Math.round((percent / 100) * 120);
+  return `hsl(${hue}, 65%, 45%)`;
+}
+
+function formatDiffMinutes(minutes) {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours === 0) return `${mins} мин`;
+  if (mins === 0) return `${hours} ч`;
+  return `${hours} ч ${mins} мин`;
+}
+
+function reasonText(detail) {
+  if (detail.available) return 'доступен(на)';
+  if (detail.reason === 'day-off') return 'нерабочий день';
+  if (detail.reason === 'before-start') return `рабочий день начнётся через ${formatDiffMinutes(detail.diffMinutes)}`;
+  if (detail.reason === 'after-end') return `рабочий день закончился ${formatDiffMinutes(detail.diffMinutes)} назад`;
+  return '';
+}
+
+// Подпись блока дня — в часовом поясе устройства зрителя (Intl без явного
+// timeZone берёт его сам): нейтральный ориентир, не привязанный ни к одному
+// конкретному участнику, чтобы не выдавать чей-то пояс за общий.
+function dayBlockLabel(date) {
+  const label = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' }).format(date);
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function renderGrid() {
+  gridContainer.innerHTML = '';
+  slotDetail.innerHTML = '';
+  state.selectedSlotIndex = null;
+  state.grid = null;
+
+  if (state.participants.length === 0) {
+    gridSection.hidden = true;
+    return;
+  }
+  gridSection.hidden = false;
+
+  const grid = Availability.buildWeekGrid(state.participants, state.rangeStart);
+  state.grid = grid;
+
+  for (let day = 0; day < 7; day++) {
+    const dayStartIndex = day * DAY_BLOCK_SIZE;
+
+    const block = document.createElement('div');
+    block.className = 'day-block';
+
+    const header = document.createElement('div');
+    header.className = 'day-block-header';
+    header.textContent = dayBlockLabel(grid[dayStartIndex].slotStart);
+    block.appendChild(header);
+
+    const rows = document.createElement('div');
+    rows.className = 'day-block-rows';
+
+    state.participants.forEach((participant) => {
+      const row = document.createElement('div');
+      row.className = 'day-row';
+
+      const name = document.createElement('span');
+      name.className = 'day-row-name';
+      name.textContent = participant.name;
+      row.appendChild(name);
+
+      const cells = document.createElement('div');
+      cells.className = 'day-row-cells';
+
+      for (let i = 0; i < DAY_BLOCK_SIZE; i++) {
+        const slotIndex = dayStartIndex + i;
+        const slot = grid[slotIndex];
+        const parts = Availability.getZonedDateParts(slot.slotStart, participant.timeZone);
+        const hh = String(parts.hour).padStart(2, '0');
+        const mm = String(parts.minute).padStart(2, '0');
+
+        const cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = 'slot-cell';
+        cell.style.background = percentToColor(slot.percent);
+        const label = `${participant.name}: ${hh}:${mm} — доступно ${slot.availableCount} из ${slot.total} (${slot.percent}%)`;
+        cell.title = label;
+        cell.setAttribute('aria-label', label);
+        cell.addEventListener('click', () => showSlotDetail(slotIndex));
+        cells.appendChild(cell);
+      }
+
+      row.appendChild(cells);
+      rows.appendChild(row);
+    });
+
+    block.appendChild(rows);
+    gridContainer.appendChild(block);
+  }
+}
+
+function showSlotDetail(slotIndex) {
+  state.selectedSlotIndex = slotIndex;
+  const slot = state.grid[slotIndex];
+
+  const items = state.participants.map((participant) => {
+    const detail = slot.details.find((item) => item.participantId === participant.id);
+    const parts = Availability.getZonedDateParts(slot.slotStart, participant.timeZone);
+    const hh = String(parts.hour).padStart(2, '0');
+    const mm = String(parts.minute).padStart(2, '0');
+    const statusClass = detail.available ? 'slot-detail-ok' : 'slot-detail-bad';
+    return `<li class="${statusClass}"><strong>${escapeHtml(participant.name)}</strong> — ${escapeHtml(reasonText(detail))} <span class="slot-detail-time">(его время: ${hh}:${mm})</span></li>`;
+  }).join('');
+
+  slotDetail.innerHTML = `
+    <h3>Доступно ${slot.availableCount} из ${slot.total} (${slot.percent}%)</h3>
+    <ul class="slot-detail-list">${items}</ul>
+  `;
+}
+
+function refresh() {
+  renderParticipants();
+  renderGrid();
 }
 
 form.addEventListener('submit', (event) => {
@@ -251,8 +395,8 @@ form.addEventListener('submit', (event) => {
   }
 
   resetForm();
-  renderParticipants();
+  refresh();
 });
 
 renderDaysCheckboxes(DEFAULT_WORK_DAYS);
-renderParticipants();
+refresh();

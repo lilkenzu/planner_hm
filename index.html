@@ -59,6 +59,19 @@
   </section>
 </main>
 
+<section class="panel grid-panel" id="grid-section" aria-labelledby="grid-title" hidden>
+  <h2 id="grid-title">Сетка доступности на ближайшую неделю</h2>
+  <p class="grid-legend">
+    Заливка ячейки — доля участников, доступных в этот момент.
+    <span class="legend-swatch" style="background: hsl(0, 65%, 45%)"></span> 0%
+    <span class="legend-swatch" style="background: hsl(60, 65%, 45%)"></span> 50%
+    <span class="legend-swatch" style="background: hsl(120, 65%, 45%)"></span> 100%
+    — клик по ячейке показывает подробности.
+  </p>
+  <div id="grid-container" class="grid-container"></div>
+  <div id="slot-detail" class="slot-detail"></div>
+</section>
+
 <script src="availability.js"></script>
 <script src="app.js"></script>
 </body>
