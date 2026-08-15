@@ -69,6 +69,7 @@ const participantsList = document.getElementById('participants-list');
 const gridSection = document.getElementById('grid-section');
 const gridContainer = document.getElementById('grid-container');
 const slotDetail = document.getElementById('slot-detail');
+const noMatchBanner = document.getElementById('no-match-banner');
 
 function renderDaysCheckboxes(selectedDays) {
   daysGrid.innerHTML = '';
@@ -283,6 +284,30 @@ function dayBlockLabel(date) {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
+// Полный формат момента для баннера «нет совпадения» — та же нейтральная
+// (не привязанная к участнику) метка, что и заголовок блока дня, плюс время.
+function slotMomentLabel(date) {
+  const label = new Intl.DateTimeFormat('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).format(date);
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+// Первый хронологически слот с максимальным процентом — строгое ">"
+// оставляет самый ранний при равенстве, а не последний.
+function findBestSlotIndex(grid) {
+  let bestIndex = 0;
+  for (let i = 1; i < grid.length; i++) {
+    if (grid[i].percent > grid[bestIndex].percent) bestIndex = i;
+  }
+  return bestIndex;
+}
+
 function renderGrid() {
   gridContainer.innerHTML = '';
   slotDetail.innerHTML = '';
@@ -297,6 +322,24 @@ function renderGrid() {
 
   const grid = Availability.buildWeekGrid(state.participants, state.rangeStart);
   state.grid = grid;
+
+  const bestIndex = findBestSlotIndex(grid);
+  const hasFullMatch = grid[bestIndex].percent === 100;
+
+  if (hasFullMatch) {
+    noMatchBanner.hidden = true;
+    noMatchBanner.onclick = null;
+  } else {
+    const bestSlot = grid[bestIndex];
+    noMatchBanner.hidden = false;
+    noMatchBanner.textContent =
+      `Полного совпадения на этой неделе нет. Лучший вариант — ${slotMomentLabel(bestSlot.slotStart)}: ` +
+      `доступно ${bestSlot.availableCount} из ${bestSlot.total} (${bestSlot.percent}%). Нажмите, чтобы посмотреть подробности.`;
+    // onclick, а не addEventListener — renderGrid перевызывается на каждое
+    // изменение состава участников, а noMatchBanner не пересоздаётся заново
+    // (в отличие от ячеек), addEventListener бы копил обработчики.
+    noMatchBanner.onclick = () => showSlotDetail(bestIndex);
+  }
 
   for (let day = 0; day < 7; day++) {
     const dayStartIndex = day * DAY_BLOCK_SIZE;
@@ -334,6 +377,9 @@ function renderGrid() {
         const cell = document.createElement('button');
         cell.type = 'button';
         cell.className = 'slot-cell';
+        if (!hasFullMatch && slotIndex === bestIndex) {
+          cell.classList.add('slot-cell--best');
+        }
         cell.style.background = percentToColor(slot.percent);
         const label = `${participant.name}: ${hh}:${mm} — доступно ${slot.availableCount} из ${slot.total} (${slot.percent}%)`;
         cell.title = label;

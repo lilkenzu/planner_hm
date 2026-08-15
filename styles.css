@@ -327,6 +327,31 @@ button {
   outline-offset: 1px;
 }
 
+.slot-cell--best {
+  box-shadow: 0 0 0 2px #1f2430;
+  border-radius: 2px;
+}
+
+.no-match-banner {
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: 1px solid #f0c36d;
+  background: #fff8ea;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  color: #6b4c00;
+  cursor: pointer;
+}
+
+.no-match-banner:hover,
+.no-match-banner:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
 .slot-detail {
   margin-top: 16px;
 }
