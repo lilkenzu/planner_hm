@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Планировщик встреч</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="app-header">
+  <h1>Планировщик встреч</h1>
+  <p class="subtitle">Найдите окно, удобное всей команде — с учётом часовых поясов и рабочих часов каждого участника</p>
+</header>
+
+<main>
+  <section class="panel" id="panel-participants">
+    <h2>Участники</h2>
+
+    <form id="participant-form" novalidate>
+      <div class="form-row">
+        <label for="input-name">Имя</label>
+        <input type="text" id="input-name" placeholder="Например, Аня" required>
+      </div>
+
+      <div class="form-row">
+        <label for="input-timezone">Часовой пояс</label>
+        <select id="input-timezone" required></select>
+      </div>
+
+      <div class="form-row form-row-times">
+        <div>
+          <label for="input-work-start">Начало работы</label>
+          <input type="time" id="input-work-start" value="09:00" required>
+        </div>
+        <div>
+          <label for="input-work-end">Конец работы</label>
+          <input type="time" id="input-work-end" value="18:00" required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>Рабочие дни</label>
+        <div class="weekday-checks" id="weekday-checks"></div>
+      </div>
+
+      <p class="form-error" id="form-error" hidden></p>
+
+      <button type="submit">Добавить участника</button>
+    </form>
+
+    <ul class="participant-list" id="participant-list"></ul>
+    <p class="empty-hint" id="participants-empty-hint">Пока никого нет — добавьте первого участника выше.</p>
+  </section>
+
+  <section class="panel" id="panel-settings">
+    <h2>Параметры сетки</h2>
+    <div class="form-row">
+      <label for="input-week">Неделя (укажите любой день недели)</label>
+      <input type="date" id="input-week">
+    </div>
+    <div class="form-row">
+      <label for="input-ref-timezone">Показывать сетку в поясе</label>
+      <select id="input-ref-timezone"></select>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-grid" hidden>
+    <h2>Сетка доступности</h2>
+    <p class="grid-legend">
+      <span class="legend-swatch legend-0"></span> никто не доступен
+      &nbsp;→&nbsp;
+      <span class="legend-swatch legend-100"></span> доступны все
+    </p>
+    <div class="grid-scroll">
+      <div class="grid" id="availability-grid"></div>
+    </div>
+    <p class="hint">Нажмите на ячейку, чтобы увидеть время у каждого участника.</p>
+  </section>
+
+  <section class="panel" id="panel-best" hidden>
+    <h2>Лучшие варианты на неделю</h2>
+    <p class="banner" id="no-full-match-banner" hidden>
+      Времени, удобного абсолютно всем, на этой неделе нет. Показаны варианты с максимальным охватом участников.
+    </p>
+    <ol class="best-list" id="best-list"></ol>
+  </section>
+
+  <section class="panel" id="panel-detail" hidden>
+    <h2>Детали слота</h2>
+    <div id="slot-detail"></div>
+  </section>
+
+  <section class="panel" id="panel-empty">
+    <p class="empty-state">Добавьте хотя бы одного участника, чтобы увидеть сетку доступности.</p>
+  </section>
+</main>
+
+<footer class="app-footer">
+  <p>Работает полностью локально: без сети, без сохранения данных между сессиями. Все расчёты часовых поясов — через встроенные <code>Intl</code>/<code>Date</code> браузера.</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
