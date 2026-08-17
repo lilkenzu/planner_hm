@@ -101,6 +101,9 @@ node tests/availability.test.js
 - `grep` по коду — нет `import`/`require`/`<script src="http...">`, нет
   упоминаний CDN, нет `package.json`/конфигов сборщиков, нет `fetch`/`XHR`/
   `WebSocket`, нет `localStorage`/`sessionStorage`/`indexedDB`/cookies.
+- Полный сырой вывод всех перечисленных проверок (включая проверку на чистой
+  машине и публичность репозитория) — [`sessions/evidence.md`](sessions/evidence.md).
+- Скриншоты ручной проверки, сделанные самостоятельно — [`screenshots/`](screenshots/).
 
 ## Наивный прогон и сравнение
 
